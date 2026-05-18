@@ -1,0 +1,8 @@
+.env
+*.db
+media/
+.venv/
+__pycache__/
+*.pyc
+scheduled_syncs.json
+synced_posts.json

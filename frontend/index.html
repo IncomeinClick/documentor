@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<title>Documentor</title>
+<style>
+:root { --bg: #0f0f0f; --card: #1a1a1a; --border: #2a2a2a; --text: #e0e0e0; --muted: #888; --accent: #4a9eff; --danger: #ff4444; --success: #22c55e; --warn: #f59e0b; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+h1, h2, h3, .nav-brand, .nav-tab, .btn, .badge { font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif; }
+a { color: var(--accent); text-decoration: none; cursor: pointer; }
+
+/* Nav */
+.nav { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+.nav-brand { font-size: 18px; font-weight: 700; cursor: pointer; }
+.nav-brand:hover { color: var(--accent); }
+.nav-breadcrumb { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.nav-breadcrumb span { color: var(--text); font-weight: 600; }
+.nav-tabs { display: flex; gap: 4px; margin-left: auto; }
+.nav-tab { padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--muted); background: none; border: none; }
+.nav-tab.active { background: var(--accent); color: #fff; }
+.nav-tab:hover:not(.active) { background: #222; color: var(--text); }
+
+/* Container */
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+/* Project grid */
+.project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.project-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; cursor: pointer; transition: border-color 0.2s; }
+.project-card:hover { border-color: var(--accent); }
+.project-card h3 { font-size: 16px; margin-bottom: 6px; }
+.project-card .meta { font-size: 12px; color: var(--muted); }
+.project-card .actions { margin-top: 12px; display: flex; gap: 8px; }
+.project-add { background: var(--card); border: 2px dashed var(--border); border-radius: 12px; padding: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; min-height: 120px; color: var(--muted); font-size: 14px; transition: border-color 0.2s; }
+.project-add:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Cards */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.card-title { font-size: 16px; font-weight: 600; flex: 1; }
+.badge { font-size: 11px; padding: 3px 10px; border-radius: 12px; font-weight: 600; text-transform: uppercase; }
+.badge-draft { background: #333; color: var(--muted); }
+.badge-posted { background: #1a3a2a; color: var(--success); }
+.badge-failed { background: #3a1a1a; color: var(--danger); }
+.badge-executing { background: #3a2a1a; color: var(--warn); }
+.badge-scheduled { background: #1a2a3a; color: var(--accent); }
+.badge-posted_draft { background: #3a2a1a; color: var(--warn); }
+.source-badge { font-size: 11px; color: var(--muted); background: #222; padding: 2px 8px; border-radius: 4px; }
+
+/* Blocks */
+.headline-block { background: #111; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 12px; font-size: 15px; line-height: 1.6; white-space: pre-wrap; }
+.comment-block { padding: 8px 0; border-bottom: 1px solid #222; font-size: 14px; line-height: 1.5; display: flex; gap: 8px; }
+.comment-num { color: var(--accent); font-weight: 700; min-width: 24px; }
+.comment-text { flex: 1; white-space: pre-wrap; }
+
+/* Buttons */
+.btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #3a8eef; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-outline { background: none; border: 1px solid var(--border); color: var(--text); }
+.btn-outline:hover { background: #222; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-group { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+/* Forms */
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.form-input, .form-textarea, .form-select { width: 100%; padding: 10px 12px; background: #111; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; }
+.form-input:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-textarea { min-height: 100px; resize: vertical; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+.modal-overlay.active { display: flex; }
+.modal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+.modal h2 { font-size: 18px; margin-bottom: 16px; }
+
+/* Quick Image */
+.preview-container { margin-top: 16px; text-align: center; }
+.preview-container img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); }
+
+/* Section header */
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.section-header h2 { font-size: 16px; }
+
+/* Collapsible posted cards */
+.card-collapsed .headline-block,
+.card-collapsed .comment-block,
+.card-collapsed .caption-block,
+.card-collapsed .btn-group { display: none; }
+.card-collapsed { cursor: pointer; }
+.card-collapsed .card-header { margin-bottom: 0; }
+.card-toggle { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 4px 8px; transition: transform 0.2s; }
+.card-toggle.collapsed { transform: rotate(-90deg); }
+
+/* Pagination */
+.pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 20px; }
+.pagination button { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; font-size: 13px; }
+.pagination button:hover:not(:disabled) { background: #222; border-color: var(--accent); }
+.pagination button:disabled { opacity: 0.4; cursor: default; }
+.pagination button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pagination .page-info { font-size: 13px; color: var(--muted); }
+
+/* Page sections */
+.page { display: none; }
+.page.active { display: block; }
+
+/* Empty state */
+.empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+.empty h3 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
+
+/* Toast */
+.toast { position: fixed; bottom: 20px; right: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; font-size: 14px; z-index: 300; display: none; }
+.toast.success { border-color: var(--success); }
+.toast.error { border-color: var(--danger); }
+
+/* Loading */
+.loading { text-align: center; padding: 40px; color: var(--muted); }
+
+/* Collapsible settings */
+.settings-section { background: #111; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
+.settings-toggle { width: 100%; padding: 14px 16px; background: none; border: none; color: var(--text); font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.settings-toggle:hover { color: var(--accent); }
+.settings-body { padding: 0 16px 16px; display: none; }
+.settings-body.open { display: block; }
+
+/* Comment image upload */
+.comment-img-zone { margin-top: 6px; border: 1px dashed var(--border); border-radius: 6px; padding: 8px; text-align: center; font-size: 12px; color: var(--muted); cursor: pointer; position: relative; }
+.comment-img-zone:hover { border-color: var(--accent); color: var(--accent); }
+.comment-img-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.comment-img-preview { margin-top: 6px; position: relative; display: inline-block; }
+.comment-img-preview img { max-width: 200px; max-height: 120px; border-radius: 6px; border: 1px solid var(--border); }
+.comment-img-remove { position: absolute; top: -6px; right: -6px; background: var(--danger); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; line-height: 1; }
+
+@media (max-width: 640px) {
+  .nav { flex-wrap: wrap; gap: 8px; }
+  .nav-tabs { margin-left: 0; width: 100%; }
+  .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  .container { padding: 12px; }
+  .project-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="nav" id="navbar">
+  <span class="nav-brand" onclick="goHome()">Documentor</span>
+  <div class="nav-breadcrumb" id="breadcrumb" style="display:none;">
+    <span style="color:var(--muted);">/</span>
+    <span id="breadcrumbName"></span>
+  </div>
+  <div class="nav-tabs" id="globalTabs">
+    <button class="nav-tab active" data-tab="projects" onclick="goHome()">Projects</button>
+    <button class="nav-tab" data-tab="quickimage" onclick="goQuickImage()">Quick Image</button>
+    <button class="nav-tab" data-tab="ideas" onclick="goIdeas()">Ideas</button>
+  </div>
+  <div class="nav-tabs" id="projectTabs" style="display:none;">
+    <button class="nav-tab active" data-tab="queue" onclick="showTab('queue')">Queue</button>
+    <button class="nav-tab" data-tab="drafted" onclick="showTab('drafted')">Drafted</button>
+    <button class="nav-tab" data-tab="posted" onclick="showTab('posted')">Posted</button>
+    <button class="nav-tab" data-tab="project-settings" onclick="showTab('project-settings')">Settings</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- PROJECTS PAGE (default) -->
+  <div class="page active" id="page-projects">
+    <div class="section-header">
+      <h2>Projects</h2>
+    </div>
+    <div class="project-grid" id="projectGrid"></div>
+  </div>
+
+  <!-- PROJECT VIEW: QUEUE -->
+  <div class="page" id="page-queue">
+    <div class="section-header">
+      <h2>Queue</h2>
+      <button class="btn btn-primary" onclick="openCreateModal()">+ New Content</button>
+    </div>
+    <div id="queueList"><div class="loading">Loading...</div></div>
+  </div>
+
+  <!-- PROJECT VIEW: DRAFTED -->
+  <div class="page" id="page-drafted">
+    <div class="section-header">
+      <h2>Drafted on FB</h2>
+      <span style="font-size:12px;color:var(--muted);">รายการที่ push เป็น Draft ไป Meta Business Suite แล้ว — กดเปิดเพื่อแก้/publish ที่ Business Suite</span>
+    </div>
+    <div id="draftedList"><div class="loading">Loading...</div></div>
+  </div>
+
+  <!-- PROJECT VIEW: POSTED -->
+  <div class="page" id="page-posted">
+    <div class="section-header">
+      <h2>Posted</h2>
+    </div>
+    <div id="postedList"><div class="loading">Loading...</div></div>
+  </div>
+
+  <!-- PROJECT VIEW: QUICK IMAGE -->
+  <div class="page" id="page-quickimage">
+    <div class="card">
+      <div class="section-header">
+        <h2>Quick Image</h2>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Text</label>
+        <textarea class="form-textarea" id="qi-text" rows="4" placeholder="Enter headline text..."></textarea>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label class="form-label">Font</label><select class="form-input" id="qi-font"><option value="Sarabun" selected>Sarabun</option><option value="Montserrat">Montserrat</option></select></div>
+        <div class="form-group"><label class="form-label">Font Size</label><input class="form-input" id="qi-fontSize" type="number" value="90"></div>
+        <div class="form-group"><label class="form-label">Font Weight</label><select class="form-input" id="qi-fontWeight"><option value="400">400</option><option value="600">600</option><option value="700" selected>700</option><option value="800">800</option></select></div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label class="form-label">BG Color</label><input class="form-input" id="qi-bgColor" type="color" value="#000000"></div>
+        <div class="form-group"><label class="form-label">Text Color</label><input class="form-input" id="qi-textColor" type="color" value="#ffffff"></div>
+        <div class="form-group"><label class="form-label">Padding (px)</label><input class="form-input" id="qi-padding" type="number" value="80"></div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label class="form-label">Width</label><input class="form-input" id="qi-width" type="number" value="1200"></div>
+        <div class="form-group"><label class="form-label">Height</label><input class="form-input" id="qi-height" type="number" value="900"></div>
+        <div class="form-group"><label class="form-label">Line Height</label><input class="form-input" id="qi-lineHeight" type="number" value="1.5" step="0.1"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Text Shadow</label>
+        <input class="form-input" id="qi-textShadow" value="0 2px 4px rgba(0,0,0,0.3)">
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="previewImage()">Preview</button>
+        <button class="btn btn-outline" onclick="downloadImage()">Download PNG</button>
+      </div>
+      <div class="preview-container" id="qi-preview"></div>
+    </div>
+  </div>
+
+  <!-- IDEAS PAGE -->
+  <div class="page" id="page-ideas">
+    <div class="section-header">
+      <h2>Ideas <span id="ideas-status" style="font-size:12px;color:var(--muted);margin-left:8px;"></span></h2>
+      <div class="btn-group">
+        <button class="btn btn-outline" onclick="loadIdeas()">Refresh</button>
+        <button class="btn btn-primary" id="btn-run-ideas" onclick="runIdeas()">Run now</button>
+      </div>
+    </div>
+    <div id="ideasList"><div class="loading">Loading...</div></div>
+  </div>
+
+  <!-- PROJECT VIEW: SETTINGS -->
+  <div class="page" id="page-project-settings">
+    <div class="section-header">
+      <h2>Project Settings</h2>
+    </div>
+
+    <!-- Project info -->
+    <div class="settings-section">
+      <button class="settings-toggle" onclick="toggleSettings(this)">Project Info <span>+</span></button>
+      <div class="settings-body open">
+        <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="ps-name"></div>
+        <div class="form-group"><label class="form-label">Language</label><select class="form-input" id="ps-language"><option value="en">English</option><option value="th">Thai</option><option value="tl">Tagalog</option><option value="id">Indonesian</option></select></div>
+        <div class="form-group"><label class="form-label">Platforms</label><div style="display:flex;gap:16px;"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="ps-plat-fb" value="fb"> Facebook</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="ps-plat-ig" value="ig"> Instagram</label></div></div>
+        <div class="btn-group" style="margin-top:8px;">
+          <button class="btn btn-primary btn-sm" onclick="saveProjectInfo()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Credential -->
+    <div class="settings-section">
+      <button class="settings-toggle" onclick="toggleSettings(this)">Facebook Credential <span>+</span></button>
+      <div class="settings-body">
+        <div class="form-group"><label class="form-label">Linked Credential</label><select class="form-input" id="ps-credential"><option value="">None</option></select></div>
+        <div class="btn-group" style="margin-top:8px;">
+          <button class="btn btn-primary btn-sm" onclick="saveProjectCredential()">Save</button>
+          <button class="btn btn-outline btn-sm" onclick="openCredentialModal()">+ New Credential</button>
+        </div>
+        <div id="ps-credential-list" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <!-- Image defaults -->
+    <div class="settings-section">
+      <button class="settings-toggle" onclick="toggleSettings(this)">Default Image Settings <span>+</span></button>
+      <div class="settings-body">
+        <div class="form-row-3">
+          <div class="form-group"><label class="form-label">Font</label><select class="form-input" id="ps-font"><option value="Sarabun">Sarabun</option><option value="Montserrat">Montserrat</option></select></div>
+          <div class="form-group"><label class="form-label">Font Size</label><input class="form-input" id="ps-fontSize" type="number" value="90"></div>
+          <div class="form-group"><label class="form-label">Font Weight</label><select class="form-input" id="ps-fontWeight"><option value="400">400</option><option value="600">600</option><option value="700" selected>700</option><option value="800">800</option></select></div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group"><label class="form-label">BG Color</label><input class="form-input" id="ps-bgColor" type="color" value="#000000"></div>
+          <div class="form-group"><label class="form-label">Text Color</label><input class="form-input" id="ps-textColor" type="color" value="#ffffff"></div>
+          <div class="form-group"><label class="form-label">Padding</label><input class="form-input" id="ps-padding" type="number" value="80"></div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group"><label class="form-label">Width</label><input class="form-input" id="ps-width" type="number" value="1200"></div>
+          <div class="form-group"><label class="form-label">Height</label><input class="form-input" id="ps-height" type="number" value="900"></div>
+          <div class="form-group"><label class="form-label">Line Height</label><input class="form-input" id="ps-lineHeight" type="number" value="1.5" step="0.1"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Text Shadow</label><input class="form-input" id="ps-textShadow" value="0 2px 4px rgba(0,0,0,0.3)"></div>
+        <div class="btn-group" style="margin-top:8px;">
+          <button class="btn btn-primary btn-sm" onclick="saveProjectImageSettings()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="settings-section" style="border-color: #3a1a1a;">
+      <button class="settings-toggle" onclick="toggleSettings(this)" style="color:var(--danger);">Danger Zone <span>+</span></button>
+      <div class="settings-body">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Deleting a project removes it and all its content permanently.</p>
+        <button class="btn btn-danger btn-sm" onclick="deleteCurrentProject()">Delete Project</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CREATE CONTENT MODAL -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal" style="max-width: 680px;">
+    <h2>New Content</h2>
+
+    <!-- Method tabs -->
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px;">
+      <button class="cc-method-tab active" data-method="text_on_bg" onclick="switchMethod('text_on_bg')"
+              style="flex:1;padding:12px;background:none;border:none;border-bottom:2px solid var(--accent);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;">📝 Text-on-BG</button>
+      <button class="cc-method-tab" data-method="infographic_ai" onclick="switchMethod('infographic_ai')"
+              style="flex:1;padding:12px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;">🎨 Infographic AI</button>
+    </div>
+
+    <!-- Common fields -->
+    <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="cc-title" placeholder="Internal title"></div>
+    <div class="form-group"><label class="form-label">Source</label><input class="form-input" id="cc-source" value="manual"></div>
+
+    <!-- TEXT-ON-BG headline (only shown when method=text_on_bg) -->
+    <div class="form-group cc-method-text"><label class="form-label">Headline (rendered as image)</label><textarea class="form-textarea" id="cc-headline" placeholder="Headline text..."></textarea></div>
+
+    <!-- Caption (always shown) -->
+    <div class="form-group"><label class="form-label">Caption (FB post body)</label><textarea class="form-textarea" id="cc-caption" rows="4" placeholder="Caption text posted with the image..."></textarea></div>
+
+    <!-- INFOGRAPHIC AI controls (only shown when method=infographic_ai) -->
+    <div class="cc-method-ai" style="display:none;">
+      <!-- Step 1: Hook -->
+      <div class="btn-group" style="margin-bottom:12px;">
+        <button class="btn btn-primary" id="cc-ai-hook-btn" onclick="aiGenHook()">🎯 Generate Hook</button>
+      </div>
+      <div id="cc-ai-hook-block" style="display:none;margin-bottom:16px;">
+        <div class="form-group" style="margin-bottom:8px;">
+          <label class="form-label">Hook (จะแสดงเป็น headline บนรูป — แก้ได้)</label>
+          <textarea class="form-textarea" id="cc-ai-hook" rows="3"></textarea>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-outline btn-sm" onclick="aiGenHook()">↻ Regenerate Hook</button>
+          <button class="btn btn-success btn-sm" id="cc-ai-image-btn" onclick="aiGenImage(false)">🎨 Generate Image →</button>
+        </div>
+      </div>
+      <div id="cc-ai-status" style="font-size:13px;color:var(--muted);margin-bottom:12px;"></div>
+
+      <!-- Step 2: Image -->
+      <div id="cc-ai-result" style="display:none;">
+        <div style="text-align:center;margin-bottom:16px;">
+          <img id="cc-ai-img" style="max-width:100%;max-height:520px;border-radius:8px;border:1px solid var(--border);">
+        </div>
+        <details style="margin-bottom:12px;">
+          <summary style="cursor:pointer;color:var(--muted);font-size:13px;">Image prompt (advanced — แก้ได้แล้ว Regenerate Image Only)</summary>
+          <textarea class="form-textarea" id="cc-ai-prompt" rows="6" style="margin-top:8px;"></textarea>
+        </details>
+        <div class="btn-group" style="margin-bottom:16px;">
+          <button class="btn btn-outline btn-sm" onclick="aiGenImage(true)">↻ Regenerate Image Only</button>
+          <button class="btn btn-outline btn-sm" onclick="aiGenImage(false)">↻ Regenerate Image with current Hook</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comments (always shown) -->
+    <div id="cc-comments">
+      <div class="form-group"><label class="form-label">Comment 1</label><textarea class="form-textarea" id="cc-comment-1" rows="2" placeholder="Comment text..."></textarea></div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="addCommentField()" style="margin-bottom:16px;">+ Add Comment</button>
+
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="createContent(false)">💾 Save Draft</button>
+      <button class="btn btn-success" onclick="createContent(true)">📝 Save + Create FB Draft</button>
+      <button class="btn btn-outline" onclick="closeModal('createModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT CONTENT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h2>Edit Content</h2>
+    <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="ec-title"></div>
+    <div class="form-group"><label class="form-label">Headline</label><textarea class="form-textarea" id="ec-headline"></textarea></div>
+    <div class="form-group"><label class="form-label">Caption</label><textarea class="form-textarea" id="ec-caption" rows="3" placeholder="Caption text posted with the image..."></textarea></div>
+    <div id="ec-comments"></div>
+    <button class="btn btn-outline btn-sm" onclick="addEditCommentField()" style="margin-bottom:16px;">+ Add Comment</button>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveContentEdit()">Save</button>
+      <button class="btn btn-outline" onclick="closeModal('editModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE PROJECT MODAL -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal">
+    <h2>New Project</h2>
+    <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="pm-name" placeholder="My Project"></div>
+    <div class="form-group"><label class="form-label">Language</label><select class="form-input" id="pm-language"><option value="en">English</option><option value="th">Thai</option><option value="tl">Tagalog</option><option value="id">Indonesian</option></select></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveProject()">Create</button>
+      <button class="btn btn-outline" onclick="closeModal('projectModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREDENTIAL MODAL -->
+<div class="modal-overlay" id="credentialModal">
+  <div class="modal">
+    <h2>New Credential</h2>
+    <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="cm-name" placeholder="My FB Page"></div>
+    <div class="form-group"><label class="form-label">Page ID</label><input class="form-input" id="cm-pageId"></div>
+    <div class="form-group"><label class="form-label">Access Token</label><textarea class="form-textarea" id="cm-token" rows="3"></textarea></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveCredential()">Save</button>
+      <button class="btn btn-outline" onclick="closeModal('credentialModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ATTACH AI IMAGE MODAL (generate image for an existing infographic_ai draft) -->
+<div class="modal-overlay" id="aiAttachModal">
+  <div class="modal" style="max-width:680px;">
+    <h2>🎨 Generate Infographic Image</h2>
+    <div class="form-group">
+      <label class="form-label">Caption (used as input — won't change the saved caption)</label>
+      <textarea class="form-textarea" id="aa-caption" rows="5"></textarea>
+    </div>
+    <div class="btn-group" style="margin-bottom:12px;">
+      <button class="btn btn-primary" id="aa-hook-btn" onclick="aaGenHook()">🎯 Generate Hook</button>
+    </div>
+    <div id="aa-hook-block" style="display:none;margin-bottom:16px;">
+      <div class="form-group" style="margin-bottom:8px;">
+        <label class="form-label">Hook (จะแสดงเป็น headline บนรูป + เซฟแทน text เดิมของ block)</label>
+        <textarea class="form-textarea" id="aa-hook" rows="3"></textarea>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-outline btn-sm" onclick="aaGenHook()">↻ Regenerate Hook</button>
+        <button class="btn btn-success btn-sm" id="aa-image-btn" onclick="aaGenImage(false)">🎨 Generate Image →</button>
+      </div>
+    </div>
+    <div id="aa-status" style="font-size:13px;color:var(--muted);margin-bottom:12px;"></div>
+    <div id="aa-result" style="display:none;">
+      <div style="text-align:center;margin-bottom:16px;">
+        <img id="aa-img" style="max-width:100%;max-height:520px;border-radius:8px;border:1px solid var(--border);">
+      </div>
+      <details style="margin-bottom:12px;">
+        <summary style="cursor:pointer;color:var(--muted);font-size:13px;">Image prompt (advanced)</summary>
+        <textarea class="form-textarea" id="aa-prompt" rows="6" style="margin-top:8px;"></textarea>
+      </details>
+      <div class="btn-group" style="margin-bottom:16px;">
+        <button class="btn btn-outline btn-sm" onclick="aaGenImage(true)">↻ Regenerate Image Only</button>
+        <button class="btn btn-outline btn-sm" onclick="aaGenImage(false)">↻ Regenerate Image with current Hook</button>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-success" id="aa-save-btn" onclick="aaSave()" disabled>💾 Save Image to Draft</button>
+      <button class="btn btn-outline" onclick="closeModal('aiAttachModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('token') || '';
+let projects = [];
+let currentProject = null;  // project object (not just id)
+let editingContentId = null;
+let commentCounter = 1;
+
+function headers(extra = {}) {
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...extra };
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, { ...opts, headers: headers(opts.headers || {}) });
+  if (res.status === 401) { window.location.href = '/login'; return null; }
+  if (res.headers.get('content-type')?.includes('image')) return res.blob();
+  return res.json();
+}
+
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function toggleSettings(btn) {
+  const body = btn.nextElementSibling;
+  const isOpen = body.classList.toggle('open');
+  btn.querySelector('span').textContent = isOpen ? '−' : '+';
+}
+
+// ─── NAVIGATION ───
+
+function setGlobalTab(tab) {
+  document.getElementById('globalTabs').style.display = 'flex';
+  document.getElementById('projectTabs').style.display = 'none';
+  document.getElementById('breadcrumb').style.display = 'none';
+  document.querySelectorAll('#globalTabs .nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`#globalTabs .nav-tab[data-tab="${tab}"]`)?.classList.add('active');
+}
+
+function goHome() {
+  currentProject = null;
+  setGlobalTab('projects');
+  showPageOnly('projects');
+  loadProjectGrid();
+}
+
+function goQuickImage() {
+  currentProject = null;
+  setGlobalTab('quickimage');
+  showPageOnly('quickimage');
+  // Load saved settings from localStorage
+  const saved = localStorage.getItem('qi-settings');
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      if (s.font) document.getElementById('qi-font').value = s.font;
+      if (s.font_size) document.getElementById('qi-fontSize').value = s.font_size;
+      if (s.font_weight) document.getElementById('qi-fontWeight').value = s.font_weight;
+      if (s.bg_color) document.getElementById('qi-bgColor').value = s.bg_color;
+      if (s.text_color) document.getElementById('qi-textColor').value = s.text_color;
+      if (s.padding) document.getElementById('qi-padding').value = s.padding;
+      if (s.width) document.getElementById('qi-width').value = s.width;
+      if (s.height) document.getElementById('qi-height').value = s.height;
+      if (s.line_height) document.getElementById('qi-lineHeight').value = s.line_height;
+      if (s.text_shadow) document.getElementById('qi-textShadow').value = s.text_shadow;
+    } catch(e) {}
+  }
+}
+
+function goIdeas() {
+  currentProject = null;
+  setGlobalTab('ideas');
+  showPageOnly('ideas');
+  loadIdeas();
+  refreshIdeasStatus();
+}
+
+const CATEGORY_LABEL = {
+  news: 'NEWS',
+  oss: 'OSS',
+  case_study: 'CASE',
+  how_to: 'HOW-TO',
+  youtube: 'YT',
+  failure: 'FAIL',
+};
+
+const CATEGORY_COLOR = {
+  news: '#4a9eff',
+  oss: '#22c55e',
+  case_study: '#a855f7',
+  how_to: '#f59e0b',
+  youtube: '#ef4444',
+  failure: '#888',
+};
+
+async function loadIdeas() {
+  const el = document.getElementById('ideasList');
+  el.innerHTML = '<div class="loading">Loading...</div>';
+  const data = await api('/api/ideas');
+  if (!data || !data.days || !data.days.length) {
+    el.innerHTML = '<div class="empty"><h3>ยังไม่มี ideas</h3><p>กด "Run now" เพื่อให้ Tim research content วันนี้</p></div>';
+    return;
+  }
+  el.innerHTML = data.days.map((day, idx) => {
+    const enPostedCount = day.ideas.filter(i => i.posted_to_en_at).length;
+    const thPostedCount = day.ideas.filter(i => i.posted_to_th_at).length;
+    const ideasHtml = day.ideas.map(i => {
+      const label = CATEGORY_LABEL[i.category] || i.category.toUpperCase();
+      const color = CATEGORY_COLOR[i.category] || '#888';
+      const titleHtml = i.url
+        ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a>`
+        : esc(i.title);
+      const conf = i.confidence ? `<span style="font-size:11px;color:var(--muted);margin-left:6px;">[${esc(i.confidence)}]</span>` : '';
+      const enBadge = i.posted_to_en_at
+        ? `<span title="Posted to EN ${esc(i.posted_to_en_at)}" style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">EN ✓</span>`
+        : `<span title="Not yet posted to EN" style="background:transparent;color:var(--muted);border:1px dashed var(--border);padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;">EN ·</span>`;
+      const thBadge = i.posted_to_th_at
+        ? `<span title="Posted to TH ${esc(i.posted_to_th_at)}" style="background:#3b82f6;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">TH ✓</span>`
+        : `<span title="Not yet posted to TH" style="background:transparent;color:var(--muted);border:1px dashed var(--border);padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;">TH ·</span>`;
+      const cardOpacity = (i.posted_to_en_at && i.posted_to_th_at) ? 'opacity:0.6;' : '';
+      return `
+        <div class="card" style="margin-bottom:10px;${cardOpacity}">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="background:${color};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">${label}</span>
+            ${enBadge}
+            ${thBadge}
+            <div class="card-title" style="font-size:14px;">${titleHtml}${conf}</div>
+          </div>
+          ${i.summary ? `<div style="font-size:13px;color:var(--text);margin-bottom:8px;line-height:1.65;white-space:pre-line;">${esc(i.summary)}</div>` : ''}
+          ${i.why_stand_out ? `<div style="font-size:12px;color:var(--muted);line-height:1.6;white-space:pre-line;"><b style="color:var(--accent);">เด่น:</b> ${esc(i.why_stand_out)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+    return `
+      <details style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:12px;">
+        <summary style="cursor:pointer;font-size:14px;font-weight:600;">${esc(day.date)} <span style="color:var(--muted);font-weight:400;">(${day.ideas.length} ideas, EN ${enPostedCount}/${day.ideas.length}, TH ${thPostedCount}/${day.ideas.length})</span></summary>
+        <div style="margin-top:12px;">${ideasHtml}</div>
+      </details>
+    `;
+  }).join('');
+}
+
+let ideasPollInterval = null;
+
+async function refreshIdeasStatus() {
+  const data = await api('/api/ideas/run/status');
+  if (!data) return;
+  const el = document.getElementById('ideas-status');
+  const btn = document.getElementById('btn-run-ideas');
+  if (data.status === 'running') {
+    el.textContent = '⏳ Researching...';
+    if (btn) btn.disabled = true;
+  } else if (data.last_completed_at) {
+    const dt = new Date(data.last_completed_at);
+    el.textContent = `last run: ${data.last_research_date || dt.toISOString().slice(0,10)}`;
+    if (btn) btn.disabled = false;
+  } else {
+    el.textContent = 'never run';
+    if (btn) btn.disabled = false;
+  }
+  return data.status;
+}
+
+async function runIdeas() {
+  const btn = document.getElementById('btn-run-ideas');
+  btn.disabled = true;
+  const res = await fetch(API + '/api/ideas/run', { method: 'POST', headers: headers() });
+  if (res.status === 409) {
+    toast('Research is already running', 'warn');
+    btn.disabled = false;
+    return;
+  }
+  if (!res.ok) {
+    toast('Failed to start research', 'danger');
+    btn.disabled = false;
+    return;
+  }
+  toast('Research started — ideas will appear in 3-5 min', 'success');
+  await refreshIdeasStatus();
+  // Poll every 30s
+  if (ideasPollInterval) clearInterval(ideasPollInterval);
+  ideasPollInterval = setInterval(async () => {
+    const status = await refreshIdeasStatus();
+    if (status !== 'running') {
+      clearInterval(ideasPollInterval);
+      ideasPollInterval = null;
+      loadIdeas();
+    }
+  }, 30000);
+}
+
+function enterProject(projectId) {
+  currentProject = projects.find(p => p.id === projectId);
+  if (!currentProject) return;
+  document.getElementById('breadcrumb').style.display = 'flex';
+  document.getElementById('breadcrumbName').textContent = currentProject.name;
+  document.getElementById('globalTabs').style.display = 'none';
+  document.getElementById('projectTabs').style.display = 'flex';
+  showTab('queue');
+}
+
+function showPageOnly(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById(`page-${name}`);
+  if (el) el.classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.nav-tab[data-tab="${name}"]`)?.classList.add('active');
+  showPageOnly(name);
+  if (name === 'queue') loadQueue();
+  if (name === 'drafted') loadDrafted();
+  if (name === 'posted') loadPosted();
+  if (name === 'quickimage') loadQIFromProject();
+  if (name === 'project-settings') loadProjectSettings();
+}
+
+// ─── PROJECTS PAGE ───
+
+async function loadProjects() {
+  projects = await api('/api/projects') || [];
+}
+
+function loadProjectGrid() {
+  const grid = document.getElementById('projectGrid');
+  const cards = projects.map(p => {
+    const langMap = {en:'English',th:'Thai',tl:'Tagalog',id:'Indonesian'};
+    const lang = langMap[p.language] || p.language || 'English';
+    const cred = p.credential_id ? `<div class="meta">Credential: ${esc(p.credential_id)}</div>` : '<div class="meta" style="color:var(--warn);">No credential linked</div>';
+    return `
+      <div class="project-card" onclick="enterProject('${p.id}')">
+        <h3>${esc(p.name)}</h3>
+        <div class="meta">${lang}</div>
+        ${cred}
+      </div>`;
+  }).join('');
+  grid.innerHTML = cards + `<div class="project-add" onclick="openProjectModal()">+ New Project</div>`;
+}
+
+function toSlug(s) { return s.toLowerCase().trim().replace(/[^a-z0-9ก-๙]+/g, '-').replace(/^-|-$/g, ''); }
+
+function openProjectModal() {
+  document.getElementById('pm-name').value = '';
+  document.getElementById('projectModal').classList.add('active');
+}
+
+async function saveProject() {
+  const name = document.getElementById('pm-name').value;
+  const language = document.getElementById('pm-language').value;
+  const body = { name, slug: toSlug(name), language };
+  if (!body.name) { toast('Name required', 'error'); return; }
+  const result = await api('/api/projects', { method: 'POST', body: JSON.stringify(body) });
+  if (result?.id) {
+    closeModal('projectModal');
+    toast('Project created');
+    await loadProjects();
+    loadProjectGrid();
+  } else {
+    toast('Failed', 'error');
+  }
+}
+
+async function deleteCurrentProject() {
+  if (!currentProject) return;
+  if (!confirm(`Delete project "${currentProject.name}" and all its content?`)) return;
+  await api(`/api/projects/${currentProject.id}`, { method: 'DELETE' });
+  toast('Project deleted');
+  await loadProjects();
+  goHome();
+}
+
+// ─── PROJECT SETTINGS ───
+
+async function loadProjectSettings() {
+  if (!currentProject) return;
+  document.getElementById('ps-name').value = currentProject.name;
+  document.getElementById('ps-language').value = currentProject.language || 'en';
+  const plats = (currentProject.platforms || 'fb').split(',');
+  document.getElementById('ps-plat-fb').checked = plats.includes('fb');
+  document.getElementById('ps-plat-ig').checked = plats.includes('ig');
+
+  // Load credentials for dropdown
+  const creds = await api('/api/credentials') || [];
+  const sel = document.getElementById('ps-credential');
+  sel.innerHTML = '<option value="">None</option>' + creds.map(c => `<option value="${c.id}" ${c.id === currentProject.credential_id ? 'selected' : ''}>${esc(c.name)} (${esc(c.id)})</option>`).join('');
+
+  // Credential list
+  const listEl = document.getElementById('ps-credential-list');
+  if (creds.length) {
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">All credentials:</div>' + creds.map(c => `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #222;font-size:13px;">
+        <strong style="flex:1;">${esc(c.name)}</strong>
+        <span style="color:var(--muted);">${esc(c.page_id)}</span>
+        <button class="btn btn-outline btn-sm" onclick="testCredential('${c.id}')" style="padding:4px 8px;font-size:11px;">Test</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCredential('${c.id}')" style="padding:4px 8px;font-size:11px;">Delete</button>
+      </div>
+    `).join('');
+  } else {
+    listEl.innerHTML = '<div style="font-size:13px;color:var(--muted);">No credentials yet.</div>';
+  }
+
+  // Image settings
+  const s = currentProject.image_settings || {};
+  document.getElementById('ps-font').value = s.font || 'Sarabun';
+  document.getElementById('ps-fontSize').value = s.font_size || 58;
+  document.getElementById('ps-fontWeight').value = s.font_weight || 700;
+  document.getElementById('ps-bgColor').value = s.bg_color || '#000000';
+  document.getElementById('ps-textColor').value = s.text_color || '#ffffff';
+  document.getElementById('ps-padding').value = s.padding || 80;
+  document.getElementById('ps-width').value = s.width || 1200;
+  document.getElementById('ps-height').value = s.height || 900;
+  document.getElementById('ps-lineHeight').value = s.line_height || 1.5;
+  document.getElementById('ps-textShadow').value = s.text_shadow || '0 2px 4px rgba(0,0,0,0.3)';
+}
+
+async function saveProjectInfo() {
+  const name = document.getElementById('ps-name').value;
+  const language = document.getElementById('ps-language').value;
+  const platParts = [];
+  if (document.getElementById('ps-plat-fb').checked) platParts.push('fb');
+  if (document.getElementById('ps-plat-ig').checked) platParts.push('ig');
+  const platforms = platParts.join(',') || 'fb';
+  const body = { name, slug: toSlug(name), language, platforms };
+  await api(`/api/projects/${currentProject.id}`, { method: 'PUT', body: JSON.stringify(body) });
+  toast('Saved');
+  await loadProjects();
+  currentProject = projects.find(p => p.id === currentProject.id);
+  document.getElementById('breadcrumbName').textContent = currentProject.name;
+}
+
+async function saveProjectCredential() {
+  const cid = document.getElementById('ps-credential').value || null;
+  await api(`/api/projects/${currentProject.id}`, { method: 'PUT', body: JSON.stringify({ credential_id: cid }) });
+  toast('Credential updated');
+  await loadProjects();
+  currentProject = projects.find(p => p.id === currentProject.id);
+}
+
+function getProjectImageSettings() {
+  return {
+    font: document.getElementById('ps-font').value,
+    font_weight: parseInt(document.getElementById('ps-fontWeight').value),
+    font_size: parseInt(document.getElementById('ps-fontSize').value),
+    bg_color: document.getElementById('ps-bgColor').value,
+    text_color: document.getElementById('ps-textColor').value,
+    text_shadow: document.getElementById('ps-textShadow').value,
+    width: parseInt(document.getElementById('ps-width').value),
+    height: parseInt(document.getElementById('ps-height').value),
+    padding: parseInt(document.getElementById('ps-padding').value),
+    line_height: parseFloat(document.getElementById('ps-lineHeight').value),
+  };
+}
+
+async function saveProjectImageSettings() {
+  await api(`/api/projects/${currentProject.id}`, { method: 'PUT', body: JSON.stringify({ image_settings: getProjectImageSettings() }) });
+  toast('Image settings saved');
+  await loadProjects();
+  currentProject = projects.find(p => p.id === currentProject.id);
+}
+
+// ─── CREDENTIALS ───
+
+function openCredentialModal() {
+  ['cm-name', 'cm-pageId', 'cm-token'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('credentialModal').classList.add('active');
+}
+
+async function saveCredential() {
+  const name = document.getElementById('cm-name').value;
+  const body = {
+    id: toSlug(name),
+    name,
+    page_id: document.getElementById('cm-pageId').value,
+    access_token: document.getElementById('cm-token').value,
+  };
+  if (!body.name) { toast('Name required', 'error'); return; }
+  const result = await api('/api/credentials', { method: 'POST', body: JSON.stringify(body) });
+  if (result?.id) {
+    closeModal('credentialModal');
+    toast('Credential added');
+    loadProjectSettings();
+  } else {
+    toast('Failed', 'error');
+  }
+}
+
+async function testCredential(id) {
+  const result = await api(`/api/credentials/${id}/test`, { method: 'POST' });
+  if (result?.ok) toast(`Valid: ${result.page_name}`);
+  else toast(`Failed: ${result?.error}`, 'error');
+}
+
+async function deleteCredential(id) {
+  if (!confirm('Delete this credential?')) return;
+  await api(`/api/credentials/${id}`, { method: 'DELETE' });
+  toast('Deleted');
+  loadProjectSettings();
+}
+
+// ─── CONTENT QUEUE ───
+
+function renderContentCard(c, { collapsed = false } = {}) {
+  const headline = c.blocks.find(b => b.sort_order === 0);
+  const comments = c.blocks.filter(b => b.sort_order > 0).sort((a, b) => a.sort_order - b.sort_order);
+  const statusClass = `badge-${c.status}`;
+  const collapsedClass = collapsed ? 'card-collapsed' : '';
+  const toggleClass = collapsed ? 'card-toggle collapsed' : 'card-toggle';
+  const toggleBtn = `<button class="${toggleClass}" onclick="toggleCard(event, this)">▼</button>`;
+  const clickExpand = collapsed ? `onclick="toggleCard(event, this.querySelector('.card-toggle'))"` : '';
+  return `
+    <div class="card ${collapsedClass}" data-id="${c.id}" ${clickExpand}>
+      <div class="card-header">
+        ${toggleBtn}
+        <span class="card-title">${esc(c.title)}</span>
+        <span class="source-badge">${esc(c.source)}</span>
+        <span class="badge ${statusClass}">${c.status}</span>
+        ${c.scheduled_at ? `<span style="font-size:11px;color:var(--accent);margin-left:8px;">⏰ ${new Date(c.scheduled_at).toLocaleString()}</span>` : ''}
+        <span style="font-size:11px;color:var(--muted);margin-left:auto;">${new Date(c.created_at).toLocaleString()}</span>
+      </div>
+      ${headline ? `<div class="headline-block">${esc(headline.text)}</div>` : ''}
+      ${c.caption ? `<div class="caption-block" style="padding:8px 0;font-size:14px;color:var(--muted);white-space:pre-wrap;border-bottom:1px solid #222;margin-bottom:8px;"><span style="font-size:11px;color:var(--accent);font-weight:600;">CAPTION</span><br>${esc(c.caption)}</div>` : ''}
+      ${comments.map(cm => `
+        <div class="comment-block">
+          <span class="comment-num">${cm.sort_order}</span>
+          <span class="comment-text">${esc(cm.text)}${cm.image_path ? `<div style="margin-top:6px;"><img src="/media/${cm.image_path.split('/').pop()}" style="max-width:150px;max-height:80px;border-radius:4px;border:1px solid var(--border);" onerror="this.style.display='none'"></div>` : ''}</span>
+        </div>
+      `).join('')}
+      <div class="btn-group">
+        ${c.image_method === 'infographic_ai' && (c.status === 'draft' || c.status === 'failed') ? `<button class="btn btn-primary btn-sm" onclick="openAiAttachModal('${c.id}')">${headline && headline.image_path ? '🎨 Regenerate Image' : '🎨 Generate Image'}</button>` : ''}
+        ${c.status === 'draft' || c.status === 'failed' ? `<button class="btn btn-success btn-sm" onclick="executeContent('${c.id}')">Execute</button>` : ''}
+        ${c.status === 'draft' || c.status === 'failed' ? `<button class="btn btn-warn btn-sm" onclick="createFbDraft('${c.id}')" style="background:var(--warn);color:#000;">📝 Create FB Draft</button>` : ''}
+        ${c.status === 'posted_draft' ? `<button class="btn btn-warn btn-sm" onclick="createFbDraft('${c.id}')" style="background:var(--warn);color:#000;">↻ Re-push to FB</button>` : ''}
+        ${c.status === 'posted_draft' ? `<a class="btn btn-outline btn-sm" target="_blank" href="https://business.facebook.com/latest/posts/drafts">Open Business Suite ↗</a>` : ''}
+        ${c.status === 'draft' ? `<button class="btn btn-outline btn-sm" onclick="openEditModal('${c.id}')">Edit</button>` : ''}
+        <button class="btn btn-outline btn-sm" onclick="previewContentImage('${c.id}')">Preview Image</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteContent('${c.id}')">Delete</button>
+      </div>
+    </div>
+  `;
+}
+
+function toggleCard(e, btn) {
+  e.stopPropagation();
+  const card = btn.closest('.card');
+  card.classList.toggle('card-collapsed');
+  btn.classList.toggle('collapsed');
+  if (card.classList.contains('card-collapsed')) {
+    card.setAttribute('onclick', "toggleCard(event, this.querySelector('.card-toggle'))");
+  } else {
+    card.removeAttribute('onclick');
+  }
+}
+
+async function loadQueue() {
+  const el = document.getElementById('queueList');
+  const data = await api(`/api/contents?project_id=${currentProject.id}&status=draft`);
+  if (!data || !data.items.length) { el.innerHTML = '<div class="empty"><h3>No drafts</h3><p>Create new content to get started.</p></div>'; return; }
+  el.innerHTML = data.items.map(c => renderContentCard(c, { collapsed: true })).join('');
+}
+
+// ─── ATTACH AI IMAGE TO EXISTING DRAFT ───
+
+let aaContentId = null;
+let aaTempId = null;
+
+async function openAiAttachModal(contentId) {
+  aaContentId = contentId;
+  aaTempId = null;
+  const c = await api(`/api/contents/${contentId}`);
+  if (!c) { toast('Load failed', 'error'); return; }
+  document.getElementById('aa-caption').value = c.caption || '';
+  // Pre-fill hook from existing headline text if it's a real hook (not the placeholder)
+  const headline = c.blocks.find(b => b.sort_order === 0);
+  const existingHook = headline?.text || '';
+  document.getElementById('aa-hook').value = existingHook.startsWith('Untitled') ? '' : existingHook;
+  document.getElementById('aa-hook-block').style.display = existingHook && !existingHook.startsWith('Untitled') ? 'block' : 'none';
+  document.getElementById('aa-result').style.display = 'none';
+  document.getElementById('aa-status').textContent = '';
+  document.getElementById('aa-save-btn').disabled = true;
+  document.getElementById('aiAttachModal').classList.add('active');
+}
+
+async function aaGenHook() {
+  const caption = document.getElementById('aa-caption').value.trim();
+  if (!caption) { toast('ใส่ caption ก่อน', 'error'); return; }
+  const btn = document.getElementById('aa-hook-btn');
+  const status = document.getElementById('aa-status');
+  btn.disabled = true; btn.textContent = '⏳ คิด hook...';
+  status.textContent = 'AI กำลังคิด hook... (~3-5 วิ)';
+  try {
+    const result = await api('/api/ai-image/hook', { method: 'POST', body: JSON.stringify({ project_id: currentProject.id, caption }) });
+    if (!result?.hook) { toast(result?.detail || 'Failed', 'error'); return; }
+    document.getElementById('aa-hook').value = result.hook;
+    document.getElementById('aa-hook-block').style.display = 'block';
+    status.textContent = '✓ Got hook — แก้ได้ แล้วค่อยกด Generate Image';
+  } catch (e) {
+    toast('Hook failed: ' + e.message, 'error');
+    status.textContent = '';
+  } finally {
+    btn.disabled = false; btn.textContent = '🎯 Generate Hook';
+  }
+}
+
+async function aaGenImage(imageOnly) {
+  const caption = document.getElementById('aa-caption').value.trim();
+  const hook = document.getElementById('aa-hook').value.trim();
+  if (!hook) { toast('Generate hook ก่อน', 'error'); return; }
+  const status = document.getElementById('aa-status');
+  const imageBtn = document.getElementById('aa-image-btn');
+  status.textContent = imageOnly ? 'Regenerating image (same prompt)...' : 'AI สร้างรูป (~60-90 วิ)...';
+  if (imageBtn) { imageBtn.disabled = true; imageBtn.textContent = '⏳ Generating...'; }
+  try {
+    const body = { project_id: currentProject.id, caption, hook };
+    if (imageOnly) {
+      const editedPrompt = document.getElementById('aa-prompt').value.trim();
+      if (!editedPrompt) { toast('ยังไม่มี prompt — กด Generate Image ก่อน', 'error'); return; }
+      body.prompt = editedPrompt;
+      body.temp_id = aaTempId;
+    } else if (aaTempId) {
+      body.temp_id = aaTempId;
+    }
+    const result = await api('/api/ai-image/image', { method: 'POST', body: JSON.stringify(body) });
+    if (!result?.temp_id) { toast(result?.detail || 'Failed', 'error'); return; }
+    aaTempId = result.temp_id;
+    document.getElementById('aa-img').src = result.image_url + '?t=' + Date.now();
+    document.getElementById('aa-prompt').value = result.prompt;
+    document.getElementById('aa-result').style.display = 'block';
+    document.getElementById('aa-save-btn').disabled = false;
+    status.textContent = '✓ Image ready';
+  } catch (e) {
+    toast('Image failed: ' + e.message, 'error');
+    status.textContent = '';
+  } finally {
+    if (imageBtn) { imageBtn.disabled = false; imageBtn.textContent = '🎨 Generate Image →'; }
+  }
+}
+
+async function aaSave() {
+  if (!aaContentId || !aaTempId) { toast('Generate ก่อน', 'error'); return; }
+  const hook = document.getElementById('aa-hook').value.trim();
+  const result = await api(`/api/contents/${aaContentId}/attach-ai-image`, { method: 'POST', body: JSON.stringify({ temp_image_id: aaTempId, hook }) });
+  if (result?.id) {
+    closeModal('aiAttachModal');
+    toast('Image attached to draft');
+    loadQueue();
+  } else {
+    toast(result?.detail || 'Failed to attach', 'error');
+  }
+}
+
+async function createFbDraft(id) {
+  if (!confirm('สร้าง FB Draft? โพสต์จะไปอยู่ใน Meta Business Suite (Drafts) ให้แก้ก่อน publish')) return;
+  const result = await api(`/api/contents/${id}/draft`, { method: 'POST' });
+  if (result?.status === 'posted_draft') {
+    toast('FB Draft created — เปิดใน Business Suite');
+    if (result.business_suite_url) window.open(result.business_suite_url, '_blank');
+    loadQueue();
+    if (document.getElementById('page-drafted')?.classList.contains('active')) loadDrafted();
+  } else {
+    toast(result?.detail || 'Failed to create draft', 'error');
+  }
+}
+
+async function loadDrafted() {
+  const el = document.getElementById('draftedList');
+  el.innerHTML = '<div class="loading">Loading...</div>';
+  const data = await api(`/api/contents?project_id=${currentProject.id}&status=posted_draft&limit=200`);
+  if (!data || !data.items.length) { el.innerHTML = '<div class="empty"><h3>ยังไม่มี draft</h3><p>กด "Create FB Draft" บนการ์ดใน Queue เพื่อ push เป็น draft ใน Business Suite</p></div>'; return; }
+  el.innerHTML = data.items
+    .sort((a, b) => new Date(b.posted_at || b.updated_at) - new Date(a.posted_at || a.updated_at))
+    .map(c => renderContentCard(c, { collapsed: true }))
+    .join('');
+}
+
+let postedPage = 1;
+const POSTED_PER_PAGE = 10;
+
+async function loadPosted(page = 1) {
+  postedPage = page;
+  const el = document.getElementById('postedList');
+  el.innerHTML = '<div class="loading">Loading...</div>';
+  const offset = (page - 1) * POSTED_PER_PAGE;
+  const data = await api(`/api/contents?project_id=${currentProject.id}&status=posted&limit=${POSTED_PER_PAGE}&offset=${offset}`);
+  const failedData = page === 1 ? await api(`/api/contents?project_id=${currentProject.id}&status=failed&limit=50`) : null;
+  const failedItems = failedData?.items || [];
+  const postedItems = data?.items || [];
+  const totalPosted = data?.total || 0;
+  // Sort all by created_at descending
+  const items = [...failedItems, ...postedItems].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if (!items.length && page === 1) { el.innerHTML = '<div class="empty"><h3>No posted content yet</h3></div>'; return; }
+  const totalPages = Math.ceil((totalPosted + failedItems.length) / POSTED_PER_PAGE) || 1;
+  const cards = items.map(c => renderContentCard(c, { collapsed: true })).join('');
+  const pagination = renderPagination(page, totalPages);
+  el.innerHTML = cards + pagination;
+}
+
+function renderPagination(current, total) {
+  if (total <= 1) return '';
+  let html = '<div class="pagination">';
+  html += `<button ${current <= 1 ? 'disabled' : ''} onclick="loadPosted(${current - 1})">← Prev</button>`;
+  const start = Math.max(1, current - 2);
+  const end = Math.min(total, current + 2);
+  if (start > 1) html += `<button onclick="loadPosted(1)">1</button>`;
+  if (start > 2) html += `<span class="page-info">...</span>`;
+  for (let i = start; i <= end; i++) {
+    html += `<button class="${i === current ? 'active' : ''}" onclick="loadPosted(${i})">${i}</button>`;
+  }
+  if (end < total - 1) html += `<span class="page-info">...</span>`;
+  if (end < total) html += `<button onclick="loadPosted(${total})">${total}</button>`;
+  html += `<button ${current >= total ? 'disabled' : ''} onclick="loadPosted(${current + 1})">Next →</button>`;
+  html += '</div>';
+  return html;
+}
+
+// ─── COMMENT IMAGE HELPERS ───
+
+let pendingImages = {}; // key: "cc-1" or "ec-2", value: File object
+
+function commentImgZone(num, prefix = 'cc') {
+  return `
+    <div class="comment-img-zone" id="${prefix}-img-zone-${num}">
+      <input type="file" accept="image/*" onchange="handleImgSelect(event, ${num}, '${prefix}')">
+      Click or paste to add image
+    </div>
+    <div class="comment-img-preview" id="${prefix}-img-preview-${num}" style="display:none;">
+      <img id="${prefix}-img-thumb-${num}">
+      <button class="comment-img-remove" onclick="removeCommentImg(${num}, '${prefix}')">&times;</button>
+    </div>`;
+}
+
+function editCommentImgZone(cm) {
+  const hasImg = cm.image_path;
+  const imgUrl = hasImg ? `/media/${cm.image_path.split('/').pop()}` : '';
+  return `
+    <div class="comment-img-zone" id="ec-img-zone-${cm.sort_order}" ${hasImg ? 'style="display:none;"' : ''}>
+      <input type="file" accept="image/*" onchange="handleImgSelect(event, ${cm.sort_order}, 'ec')">
+      Click or paste to add image
+    </div>
+    <div class="comment-img-preview" id="ec-img-preview-${cm.sort_order}" ${hasImg ? '' : 'style="display:none;"'}>
+      <img id="ec-img-thumb-${cm.sort_order}" ${hasImg ? `src="${imgUrl}"` : ''}>
+      <button class="comment-img-remove" onclick="removeCommentImg(${cm.sort_order}, 'ec')">&times;</button>
+    </div>`;
+}
+
+function handleImgSelect(e, num, prefix) {
+  const file = e.target.files[0];
+  if (!file) return;
+  setCommentImage(file, num, prefix);
+}
+
+function setCommentImage(file, num, prefix) {
+  pendingImages[`${prefix}-${num}`] = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById(`${prefix}-img-thumb-${num}`).src = e.target.result;
+    document.getElementById(`${prefix}-img-preview-${num}`).style.display = 'inline-block';
+    document.getElementById(`${prefix}-img-zone-${num}`).style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeCommentImg(num, prefix) {
+  delete pendingImages[`${prefix}-${num}`];
+  document.getElementById(`${prefix}-img-preview-${num}`).style.display = 'none';
+  document.getElementById(`${prefix}-img-zone-${num}`).style.display = '';
+  const fileInput = document.querySelector(`#${prefix}-img-zone-${num} input[type="file"]`);
+  if (fileInput) fileInput.value = '';
+}
+
+function setupPaste(textareaId, num, prefix = 'cc') {
+  const el = textareaId ? document.getElementById(textareaId) : document.querySelector(`.ec-comment[data-order="${num}"]`);
+  if (!el) return;
+  el.addEventListener('paste', (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) setCommentImage(file, num, prefix);
+        return;
+      }
+    }
+  });
+}
+
+async function uploadBlockImage(blockId, file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const resp = await fetch(`/api/blocks/${blockId}/upload-image`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData,
+  });
+  return resp.json();
+}
+
+// ─── CREATE/EDIT CONTENT ───
+
+let ccMethod = 'text_on_bg';     // current tab in +New modal
+let ccAiTempId = null;            // temp_id of the latest preview image
+let ccAiHook = '';
+let ccAiPrompt = '';
+
+function switchMethod(method) {
+  ccMethod = method;
+  document.querySelectorAll('.cc-method-tab').forEach(tab => {
+    const active = tab.dataset.method === method;
+    tab.classList.toggle('active', active);
+    tab.style.color = active ? 'var(--text)' : 'var(--muted)';
+    tab.style.borderBottomColor = active ? 'var(--accent)' : 'transparent';
+  });
+  document.querySelectorAll('.cc-method-text').forEach(el => el.style.display = method === 'text_on_bg' ? '' : 'none');
+  document.querySelectorAll('.cc-method-ai').forEach(el => el.style.display = method === 'infographic_ai' ? '' : 'none');
+}
+
+function openCreateModal() {
+  commentCounter = 1;
+  pendingImages = {};
+  ccAiTempId = null;
+  ccAiHook = '';
+  ccAiPrompt = '';
+  document.getElementById('cc-title').value = '';
+  document.getElementById('cc-source').value = 'manual';
+  document.getElementById('cc-headline').value = '';
+  document.getElementById('cc-caption').value = '';
+  document.getElementById('cc-ai-result').style.display = 'none';
+  document.getElementById('cc-ai-hook-block').style.display = 'none';
+  document.getElementById('cc-ai-status').textContent = '';
+  document.getElementById('cc-ai-hook').value = '';
+  document.getElementById('cc-ai-prompt').value = '';
+  document.getElementById('cc-comments').innerHTML = `<div class="form-group"><label class="form-label">Comment 1</label><textarea class="form-textarea" id="cc-comment-1" rows="2" placeholder="Comment text... (paste image here)"></textarea>${commentImgZone(1)}</div>`;
+  setupPaste('cc-comment-1', 1);
+  switchMethod('text_on_bg');
+  document.getElementById('createModal').classList.add('active');
+}
+
+function addCommentField() {
+  commentCounter++;
+  const div = document.createElement('div');
+  div.className = 'form-group';
+  div.innerHTML = `<label class="form-label">Comment ${commentCounter}</label><textarea class="form-textarea" id="cc-comment-${commentCounter}" rows="2" placeholder="Comment text... (paste image here)"></textarea>${commentImgZone(commentCounter)}`;
+  document.getElementById('cc-comments').appendChild(div);
+  setupPaste(`cc-comment-${commentCounter}`, commentCounter);
+}
+
+// ─── AI IMAGE: 2-STEP FLOW (hook → image) ───
+
+async function aiGenHook() {
+  const caption = document.getElementById('cc-caption').value.trim();
+  if (!caption) { toast('ใส่ caption ก่อน', 'error'); return; }
+  const btn = document.getElementById('cc-ai-hook-btn');
+  const status = document.getElementById('cc-ai-status');
+  btn.disabled = true; btn.textContent = '⏳ คิด hook...';
+  status.textContent = 'AI กำลังคิด hook... (~3-5 วิ)';
+  try {
+    const result = await api('/api/ai-image/hook', { method: 'POST', body: JSON.stringify({ project_id: currentProject.id, caption }) });
+    if (!result?.hook) { toast(result?.detail || 'Failed', 'error'); return; }
+    ccAiHook = result.hook;
+    document.getElementById('cc-ai-hook').value = result.hook;
+    document.getElementById('cc-ai-hook-block').style.display = 'block';
+    status.textContent = '✓ Got hook — แก้ได้ แล้วค่อยกด Generate Image';
+  } catch (e) {
+    toast('Hook failed: ' + e.message, 'error');
+    status.textContent = '';
+  } finally {
+    btn.disabled = false; btn.textContent = '🎯 Generate Hook';
+  }
+}
+
+async function aiGenImage(imageOnly) {
+  const caption = document.getElementById('cc-caption').value.trim();
+  const hook = document.getElementById('cc-ai-hook').value.trim();
+  if (!hook) { toast('Generate hook ก่อน', 'error'); return; }
+  const status = document.getElementById('cc-ai-status');
+  const imageBtn = document.getElementById('cc-ai-image-btn');
+  status.textContent = imageOnly ? 'Regenerating image (same prompt)...' : 'AI สร้างรูป (~60-90 วิ)...';
+  if (imageBtn) { imageBtn.disabled = true; imageBtn.textContent = '⏳ Generating...'; }
+  try {
+    const body = { project_id: currentProject.id, caption, hook };
+    if (imageOnly) {
+      const editedPrompt = document.getElementById('cc-ai-prompt').value.trim();
+      if (!editedPrompt) { toast('ยังไม่มี prompt — กด Generate Image ก่อน', 'error'); return; }
+      body.prompt = editedPrompt;
+      body.temp_id = ccAiTempId;
+    } else if (ccAiTempId) {
+      body.temp_id = ccAiTempId;
+    }
+    const result = await api('/api/ai-image/image', { method: 'POST', body: JSON.stringify(body) });
+    if (!result?.temp_id) { toast(result?.detail || 'Failed', 'error'); return; }
+    ccAiTempId = result.temp_id;
+    ccAiPrompt = result.prompt;
+    document.getElementById('cc-ai-img').src = result.image_url + '?t=' + Date.now();
+    document.getElementById('cc-ai-prompt').value = result.prompt;
+    document.getElementById('cc-ai-result').style.display = 'block';
+    status.textContent = '✓ Image ready';
+  } catch (e) {
+    toast('Image failed: ' + e.message, 'error');
+    status.textContent = '';
+  } finally {
+    if (imageBtn) { imageBtn.disabled = false; imageBtn.textContent = '🎨 Generate Image →'; }
+  }
+}
+
+// ─── SAVE / CREATE ───
+
+async function createContent(thenCreateFbDraft = false) {
+  // Build blocks
+  let headlineText;
+  if (ccMethod === 'infographic_ai') {
+    if (ccAiTempId) {
+      // Image was generated — use the hook as headline text
+      headlineText = document.getElementById('cc-ai-hook').value.trim() || ccAiHook;
+    } else {
+      // No image yet — save as draft and generate later. Use title as placeholder hook.
+      headlineText = (document.getElementById('cc-title').value || '').trim() || 'Untitled (generate image to set hook)';
+      if (thenCreateFbDraft) { toast('สร้าง FB Draft ต้อง generate รูปก่อน', 'error'); return; }
+    }
+  } else {
+    headlineText = document.getElementById('cc-headline').value.trim();
+    if (!headlineText) { toast('Headline required', 'error'); return; }
+  }
+  const blocks = [{ sort_order: 0, text: headlineText }];
+  for (let i = 1; i <= commentCounter; i++) {
+    const el = document.getElementById(`cc-comment-${i}`);
+    if (el && el.value.trim()) blocks.push({ sort_order: i, text: el.value });
+  }
+
+  const body = {
+    project_id: currentProject.id,
+    title: document.getElementById('cc-title').value || 'Untitled',
+    caption: document.getElementById('cc-caption').value || null,
+    source: document.getElementById('cc-source').value,
+    blocks,
+    image_method: ccMethod,
+    temp_image_id: ccMethod === 'infographic_ai' ? ccAiTempId : null,
+  };
+  const result = await api('/api/contents', { method: 'POST', body: JSON.stringify(body) });
+  if (!result?.id) { toast(result?.detail || 'Failed to create', 'error'); return; }
+
+  // Upload comment images
+  for (const block of result.blocks) {
+    if (block.sort_order > 0 && pendingImages[`cc-${block.sort_order}`]) {
+      await uploadBlockImage(block.id, pendingImages[`cc-${block.sort_order}`]);
+    }
+  }
+  pendingImages = {};
+
+  if (thenCreateFbDraft) {
+    closeModal('createModal');
+    toast('Saved — pushing to FB Draft...');
+    const draft = await api(`/api/contents/${result.id}/draft`, { method: 'POST' });
+    if (draft?.status === 'posted_draft') {
+      toast('FB Draft created');
+      if (draft.business_suite_url) window.open(draft.business_suite_url, '_blank');
+    } else {
+      toast(draft?.detail || 'FB Draft failed (saved as draft locally)', 'error');
+    }
+    loadQueue();
+  } else {
+    closeModal('createModal');
+    toast('Saved as draft');
+    loadQueue();
+  }
+}
+
+async function openEditModal(id) {
+  editingContentId = id;
+  pendingImages = {};
+  const c = await api(`/api/contents/${id}`);
+  if (!c) return;
+  document.getElementById('ec-title').value = c.title;
+  document.getElementById('ec-caption').value = c.caption || '';
+  const headline = c.blocks.find(b => b.sort_order === 0);
+  document.getElementById('ec-headline').value = headline?.text || '';
+  const comments = c.blocks.filter(b => b.sort_order > 0).sort((a, b) => a.sort_order - b.sort_order);
+  document.getElementById('ec-comments').innerHTML = comments.map(cm => `
+    <div class="form-group">
+      <label class="form-label">Comment ${cm.sort_order}</label>
+      <textarea class="form-textarea ec-comment" data-order="${cm.sort_order}" data-block-id="${cm.id}" rows="2" placeholder="Comment text... (paste image here)">${esc(cm.text)}</textarea>
+      ${editCommentImgZone(cm)}
+    </div>
+  `).join('');
+  document.getElementById('editModal').classList.add('active');
+  comments.forEach(cm => setupPaste(null, cm.sort_order, 'ec'));
+}
+
+function addEditCommentField() {
+  const existing = document.querySelectorAll('.ec-comment');
+  const next = existing.length + 1;
+  const div = document.createElement('div');
+  div.className = 'form-group';
+  div.innerHTML = `<label class="form-label">Comment ${next}</label><textarea class="form-textarea ec-comment" data-order="${next}" rows="2" placeholder="Comment text... (paste image here)"></textarea>${commentImgZone(next, 'ec')}`;
+  document.getElementById('ec-comments').appendChild(div);
+  setupPaste(null, next, 'ec');
+}
+
+async function saveContentEdit() {
+  await api(`/api/contents/${editingContentId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title: document.getElementById('ec-title').value, caption: document.getElementById('ec-caption').value || null }),
+  });
+  const blocks = [{ sort_order: 0, text: document.getElementById('ec-headline').value }];
+  document.querySelectorAll('.ec-comment').forEach(el => {
+    if (el.value.trim()) blocks.push({ sort_order: parseInt(el.dataset.order), text: el.value });
+  });
+  const blockResult = await api(`/api/contents/${editingContentId}/blocks`, {
+    method: 'PUT',
+    body: JSON.stringify({ blocks }),
+  });
+  // Upload comment images if any new ones
+  if (blockResult) {
+    for (const block of blockResult) {
+      if (block.sort_order > 0 && pendingImages[`ec-${block.sort_order}`]) {
+        await uploadBlockImage(block.id, pendingImages[`ec-${block.sort_order}`]);
+      }
+    }
+  }
+  pendingImages = {};
+  closeModal('editModal');
+  toast('Content updated');
+  loadQueue();
+}
+
+async function executeContent(id) {
+  if (!confirm('Execute this content? It will post to Facebook.')) return;
+  toast('Executing...');
+  const result = await api(`/api/contents/${id}/execute`, { method: 'POST' });
+  if (result?.status === 'posted') toast('Posted successfully!');
+  else toast(`Status: ${result?.status || 'error'}`, 'error');
+  loadQueue();
+}
+
+async function deleteContent(id) {
+  if (!confirm('Delete this content?')) return;
+  await api(`/api/contents/${id}`, { method: 'DELETE' });
+  toast('Deleted');
+  loadQueue();
+}
+
+async function previewContentImage(id) {
+  const btn = event?.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Rendering...'; }
+  try {
+    const c = await api(`/api/contents/${id}`);
+    if (!c) return;
+    const headline = c.blocks.find(b => b.sort_order === 0);
+    if (!headline) { toast('No headline block', 'error'); return; }
+
+    // For infographic_ai with an attached image: open the saved PNG directly (don't re-render text-on-bg!)
+    if (c.image_method === 'infographic_ai' && headline.image_path) {
+      const filename = headline.image_path.split('/').pop();
+      window.open(`/media/${filename}`, '_blank');
+      return;
+    }
+
+    // text-on-bg (or AI without image yet) → render via text renderer
+    const settings = currentProject?.image_settings || {};
+    const blob = await api('/api/image/preview', {
+      method: 'POST',
+      body: JSON.stringify({ text: headline.text, settings }),
+    });
+    if (blob instanceof Blob) {
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Preview Image'; }
+  }
+}
+
+// ─── QUICK IMAGE ───
+
+// Quick Image saves settings to localStorage automatically
+
+function getQISettings() {
+  return {
+    font: document.getElementById('qi-font').value,
+    font_weight: parseInt(document.getElementById('qi-fontWeight').value),
+    font_size: parseInt(document.getElementById('qi-fontSize').value),
+    bg_color: document.getElementById('qi-bgColor').value,
+    text_color: document.getElementById('qi-textColor').value,
+    text_shadow: document.getElementById('qi-textShadow').value,
+    width: parseInt(document.getElementById('qi-width').value),
+    height: parseInt(document.getElementById('qi-height').value),
+    padding: parseInt(document.getElementById('qi-padding').value),
+    line_height: parseFloat(document.getElementById('qi-lineHeight').value),
+  };
+}
+
+async function previewImage() {
+  const text = document.getElementById('qi-text').value;
+  if (!text.trim()) { toast('Enter some text', 'error'); return; }
+  const settings = getQISettings();
+  localStorage.setItem('qi-settings', JSON.stringify(settings));
+  const previewEl = document.getElementById('qi-preview');
+  const btn = document.querySelector('[onclick="previewImage()"]');
+  previewEl.innerHTML = '<div class="loading">Rendering image...</div>';
+  if (btn) { btn.disabled = true; btn.textContent = 'Rendering...'; }
+  try {
+    const blob = await api('/api/image/preview', {
+      method: 'POST',
+      body: JSON.stringify({ text, settings }),
+    });
+    if (blob instanceof Blob) {
+      const url = URL.createObjectURL(blob);
+      previewEl.innerHTML = `<img src="${url}" alt="Preview">`;
+    } else {
+      previewEl.innerHTML = '';
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Preview'; }
+  }
+}
+
+async function downloadImage() {
+  const text = document.getElementById('qi-text').value;
+  if (!text.trim()) { toast('Enter some text', 'error'); return; }
+  const btn = document.querySelector('[onclick="downloadImage()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Rendering...'; }
+  localStorage.setItem('qi-settings', JSON.stringify(getQISettings()));
+  try {
+    const res = await fetch('/api/image/download', {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ text, settings: getQISettings() }),
+    });
+    if (res.ok) {
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'headline.png';
+      a.click();
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Download PNG'; }
+  }
+}
+
+// ─── INIT ───
+
+async function init() {
+  const me = await api('/api/me');
+  if (!me || me.error) { window.location.href = '/login'; return; }
+  await loadProjects();
+  loadProjectGrid();
+}
+
+init();
+</script>
+</body>
+</html>
