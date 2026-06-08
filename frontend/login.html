@@ -3,14 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-document,'script','https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '1032196322712699');
-</script>
 <title>Documentor — Login</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -27,7 +19,6 @@ fbq('init', '1032196322712699');
 </style>
 </head>
 <body>
-<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1032196322712699&ev=PageView&noscript=1"/></noscript>
 <div class="login-box">
   <h1>Documentor</h1>
   <p class="subtitle">Content Management</p>
@@ -41,56 +32,6 @@ fbq('init', '1032196322712699');
   </form>
 </div>
 <script>
-function getCookie(name) {
-  const prefix = `${name}=`;
-  return document.cookie.split(';').map(v => v.trim()).find(v => v.startsWith(prefix))?.slice(prefix.length) || '';
-}
-
-function setTrackingCookie(name, value) {
-  document.cookie = `${name}=${value}; path=/; max-age=7776000; SameSite=Lax; Secure`;
-}
-
-function ensureFbp() {
-  let fbp = getCookie('_fbp');
-  if (!fbp) {
-    fbp = `fb.1.${Date.now()}.${Math.floor(Math.random() * 1e16)}`;
-    setTrackingCookie('_fbp', fbp);
-  }
-  return fbp;
-}
-
-function ensureFbc() {
-  const params = new URLSearchParams(window.location.search);
-  const fbclid = params.get('fbclid');
-  let fbc = getCookie('_fbc');
-  if (fbclid) {
-    fbc = `fb.1.${Date.now()}.${fbclid}`;
-    setTrackingCookie('_fbc', fbc);
-  }
-  return fbc;
-}
-
-function trackPageView() {
-  const eventId = `pv.${Date.now()}.${Math.random().toString(36).slice(2, 12)}`;
-  const fbp = ensureFbp();
-  const fbc = ensureFbc();
-  fbq('track', 'PageView', {}, { eventID: eventId });
-  fetch('/api/tracking/meta', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      event_name: 'PageView',
-      event_id: eventId,
-      event_source_url: window.location.href,
-      fbp,
-      fbc,
-    }),
-    keepalive: true,
-  }).catch(() => {});
-}
-
-trackPageView();
-
 document.getElementById('form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const errEl = document.getElementById('error');
