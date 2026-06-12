@@ -21,7 +21,12 @@ DB_PATH = "/opt/documentor/documentor.db"
 SYNCED_FILE = "/opt/documentor/synced_posts.json"
 MEDIA_DIR = "/opt/documentor/media"
 MEDIA_BASE_URL = "https://documentor.incomeinclick.com/media"
-CLAUDE_BIN = "/root/.local/bin/claude"
+# codex (subscription auth, NOT API key) replaces claude -p — gpt-5.4 low effort.
+# read-only sandbox: the text to translate is in the prompt, no file/network access needed.
+_CODEX_NODE_BIN = "/root/.nvm/versions/node/v22.22.3/bin"
+CODEX_ENV = {**os.environ, "PATH": _CODEX_NODE_BIN + ":" + os.environ.get("PATH", ""), "HOME": "/root"}
+CODEX_CMD = ["codex", "exec", "--skip-git-repo-check", "--ephemeral", "-s", "read-only",
+             "-m", "gpt-5.4", "-c", "model_reasoning_effort=low", "-c", "approval_policy=never"]
 GRAPH_API = "https://graph.facebook.com/v20.0"
 LOG_FILE = "/var/log/sync_posts.log"
 
@@ -145,18 +150,19 @@ def translate_caption(thai_text: str) -> str:
     )
     try:
         result = subprocess.run(
-            [CLAUDE_BIN, "-p", prompt, "--output-format", "text"],
+            CODEX_CMD + [prompt],
             capture_output=True,
             text=True,
             timeout=120,
+            env=CODEX_ENV,
         )
         if result.returncode == 0:
             translated = result.stdout.strip()
             if translated:
                 return translated
-        log.error(f"Claude CLI error: {result.stderr}")
+        log.error(f"codex CLI error: {result.stderr}")
     except subprocess.TimeoutExpired:
-        log.error("Claude CLI timed out")
+        log.error("codex CLI timed out")
     except Exception as e:
         log.error(f"Claude CLI failed: {e}")
     return ""
