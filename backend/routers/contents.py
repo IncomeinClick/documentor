@@ -15,8 +15,14 @@ from backend.services import telegram, blog_queue
 from backend.config import MEDIA_DIR, DEFAULT_IMAGE_SETTINGS
 
 TMP_DIR = MEDIA_DIR / "_tmp"
+BANGKOK_TZ = timezone(timedelta(hours=7))
 
 router = APIRouter(prefix="/api/contents", tags=["contents"])
+
+
+def bkk_now() -> datetime:
+    """Naive Bangkok wall-clock time — the form scheduled_at is stored in."""
+    return datetime.now(BANGKOK_TZ).replace(tzinfo=None)
 
 
 class BlockInput(BaseModel):
@@ -42,6 +48,10 @@ class ContentUpdate(BaseModel):
     source: str | None = None
 
 
+class ScheduleRequest(BaseModel):
+    scheduled_at: str  # "YYYY-MM-DDTHH:MM" Bangkok local time, straight from the datetime-local input
+
+
 @router.get("")
 async def list_contents(
     project_id: str | None = None,
@@ -55,7 +65,7 @@ async def list_contents(
     if project_id:
         q = q.where(Content.project_id == project_id)
     if status:
-        q = q.where(Content.status == status)
+        q = q.where(Content.status.in_(status.split(",")))  # accepts "draft,scheduled"
     q = q.limit(limit).offset(offset)
     result = await db.execute(q)
     contents = result.scalars().all()
@@ -65,7 +75,7 @@ async def list_contents(
     if project_id:
         count_q = count_q.where(Content.project_id == project_id)
     if status:
-        count_q = count_q.where(Content.status == status)
+        count_q = count_q.where(Content.status.in_(status.split(",")))
     total = (await db.execute(count_q)).scalar()
 
     out = []
@@ -305,13 +315,66 @@ async def create_fb_draft(content_id: str, db: AsyncSession = Depends(get_db), _
     return {**result, "business_suite_url": business_suite_url}
 
 
+@router.post("/{content_id}/schedule")
+async def schedule_content(content_id: str, body: ScheduleRequest, db: AsyncSession = Depends(get_db), _=Depends(require_auth)):
+    """Schedule the content — the background scheduler runs the normal execute flow when due.
+
+    scheduled_at comes in as Bangkok wall-clock time and is stored that way.
+    """
+    content = await db.get(Content, content_id)
+    if not content:
+        raise HTTPException(404, "Content not found")
+    if content.status not in ("draft", "failed", "scheduled"):
+        raise HTTPException(400, f"Cannot schedule content with status '{content.status}'")
+
+    try:
+        when = datetime.fromisoformat(body.scheduled_at)
+    except ValueError:
+        raise HTTPException(400, "Invalid scheduled_at — expected YYYY-MM-DDTHH:MM")
+    if when.tzinfo:
+        when = when.astimezone(BANGKOK_TZ).replace(tzinfo=None)
+    if when <= bkk_now():
+        raise HTTPException(400, "เวลาที่ตั้งต้องเป็นอนาคต (เวลาไทย)")
+
+    # Same precondition as execute — an AI infographic with no image would only fail at post time
+    if content.image_method == "infographic_ai" and not (MEDIA_DIR / f"{content.id}.png").exists():
+        raise HTTPException(400, "Generate the infographic image first (🎨 Generate Image)")
+
+    content.scheduled_at = when
+    content.status = "scheduled"
+    content.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(content)
+
+    result = _serialize(content, await _get_blocks(db, content.id))
+    project = await db.get(Project, content.project_id)
+    await telegram.notify_content_scheduled(result, project.name if project else content.project_id)
+    return result
+
+
+@router.post("/{content_id}/unschedule")
+async def unschedule_content(content_id: str, db: AsyncSession = Depends(get_db), _=Depends(require_auth)):
+    """Cancel a schedule — back to draft, nothing posted."""
+    content = await db.get(Content, content_id)
+    if not content:
+        raise HTTPException(404, "Content not found")
+    if content.status != "scheduled":
+        raise HTTPException(400, f"Content is not scheduled (status '{content.status}')")
+    content.scheduled_at = None
+    content.status = "draft"
+    content.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(content)
+    return _serialize(content, await _get_blocks(db, content.id))
+
+
 @router.post("/{content_id}/execute")
 async def execute_content(content_id: str, db: AsyncSession = Depends(get_db), _=Depends(require_auth)):
     """Execute: render headline → post to FB/IG → comment blocks."""
     content = await db.get(Content, content_id)
     if not content:
         raise HTTPException(404, "Content not found")
-    if content.status not in ("draft", "failed"):
+    if content.status not in ("draft", "failed", "scheduled"):
         raise HTTPException(400, f"Cannot execute content with status '{content.status}'")
     return await _execute_content_internal(content_id, db)
 

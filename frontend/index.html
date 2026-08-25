@@ -390,6 +390,7 @@ a { color: var(--accent); text-decoration: none; cursor: pointer; }
     <div class="btn-group">
       <button class="btn btn-primary" onclick="createContent(false)">💾 Save Draft</button>
       <button class="btn btn-success" onclick="createContent(true)">📝 Save + Create FB Draft</button>
+      <button class="btn btn-outline" onclick="createContent(false, true)">⏰ Save + Schedule</button>
       <button class="btn btn-outline" onclick="closeModal('createModal')">Cancel</button>
     </div>
   </div>
@@ -407,6 +408,25 @@ a { color: var(--accent); text-decoration: none; cursor: pointer; }
     <div class="btn-group">
       <button class="btn btn-primary" onclick="saveContentEdit()">Save</button>
       <button class="btn btn-outline" onclick="closeModal('editModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULE MODAL -->
+<div class="modal-overlay" id="scheduleModal">
+  <div class="modal" style="max-width:420px;">
+    <h2>⏰ ตั้งเวลาโพสต์</h2>
+    <div class="form-group">
+      <label class="form-label">เวลาไทย</label>
+      <input class="form-input" type="datetime-local" id="sm-datetime">
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">
+      ถึงเวลาแล้วระบบโพสต์ให้เหมือนกด Execute ทุกอย่าง — รูป + คอมเมนต์ + IG.
+      ถ้าเซิร์ฟเวอร์ดับจนเลยเวลาเกิน 6 ชม. จะไม่โพสต์ให้ แต่จะเด้ง Telegram แจ้ง
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveSchedule()">ตั้งเวลา</button>
+      <button class="btn btn-outline" onclick="closeModal('scheduleModal')">Cancel</button>
     </div>
   </div>
 </div>
@@ -921,6 +941,10 @@ function renderContentCard(c, { collapsed = false } = {}) {
       <div class="btn-group">
         ${c.image_method === 'infographic_ai' && (c.status === 'draft' || c.status === 'failed') ? `<button class="btn btn-primary btn-sm" onclick="openAiAttachModal('${c.id}')">${headline && headline.image_path ? '🎨 Regenerate Image' : '🎨 Generate Image'}</button>` : ''}
         ${c.status === 'draft' || c.status === 'failed' ? `<button class="btn btn-success btn-sm" onclick="executeContent('${c.id}')">Execute</button>` : ''}
+        ${c.status === 'draft' || c.status === 'failed' ? `<button class="btn btn-outline btn-sm" onclick="openScheduleModal('${c.id}')">⏰ Schedule</button>` : ''}
+        ${c.status === 'scheduled' ? `<button class="btn btn-success btn-sm" onclick="executeContent('${c.id}')">โพสต์เลย</button>` : ''}
+        ${c.status === 'scheduled' ? `<button class="btn btn-outline btn-sm" onclick="openScheduleModal('${c.id}', '${c.scheduled_at || ''}')">⏰ เปลี่ยนเวลา</button>` : ''}
+        ${c.status === 'scheduled' ? `<button class="btn btn-warn btn-sm" onclick="unscheduleContent('${c.id}')" style="background:var(--warn);color:#000;">✕ ยกเลิกเวลา</button>` : ''}
         ${c.status === 'draft' || c.status === 'failed' ? `<button class="btn btn-warn btn-sm" onclick="createFbDraft('${c.id}')" style="background:var(--warn);color:#000;">📝 Create FB Draft</button>` : ''}
         ${c.status === 'posted_draft' ? `<button class="btn btn-warn btn-sm" onclick="createFbDraft('${c.id}')" style="background:var(--warn);color:#000;">↻ Re-push to FB</button>` : ''}
         ${c.status === 'posted_draft' ? `<a class="btn btn-outline btn-sm" target="_blank" href="https://business.facebook.com/latest/posts/drafts">Open Business Suite ↗</a>` : ''}
@@ -946,7 +970,7 @@ function toggleCard(e, btn) {
 
 async function loadQueue() {
   const el = document.getElementById('queueList');
-  const data = await api(`/api/contents?project_id=${currentProject.id}&status=draft`);
+  const data = await api(`/api/contents?project_id=${currentProject.id}&status=draft,scheduled`);
   if (!data || !data.items.length) { el.innerHTML = '<div class="empty"><h3>No drafts</h3><p>Create new content to get started.</p></div>'; return; }
   el.innerHTML = data.items.map(c => renderContentCard(c, { collapsed: true })).join('');
 }
@@ -1297,7 +1321,7 @@ async function aiGenImage(imageOnly) {
 
 // ─── SAVE / CREATE ───
 
-async function createContent(thenCreateFbDraft = false) {
+async function createContent(thenCreateFbDraft = false, thenSchedule = false) {
   // Build blocks
   let headlineText;
   if (ccMethod === 'infographic_ai') {
@@ -1308,6 +1332,7 @@ async function createContent(thenCreateFbDraft = false) {
       // No image yet — save as draft and generate later. Use title as placeholder hook.
       headlineText = (document.getElementById('cc-title').value || '').trim() || 'Untitled (generate image to set hook)';
       if (thenCreateFbDraft) { toast('สร้าง FB Draft ต้อง generate รูปก่อน', 'error'); return; }
+      if (thenSchedule) { toast('ตั้งเวลาต้อง generate รูปก่อน', 'error'); return; }
     }
   } else {
     headlineText = document.getElementById('cc-headline').value.trim();
@@ -1350,6 +1375,11 @@ async function createContent(thenCreateFbDraft = false) {
       toast(draft?.detail || 'FB Draft failed (saved as draft locally)', 'error');
     }
     loadQueue();
+  } else if (thenSchedule) {
+    closeModal('createModal');
+    toast('Saved — เลือกเวลาโพสต์');
+    loadQueue();
+    openScheduleModal(result.id);
   } else {
     closeModal('createModal');
     toast('Saved as draft');
@@ -1421,6 +1451,43 @@ async function executeContent(id) {
   const result = await api(`/api/contents/${id}/execute`, { method: 'POST' });
   if (result?.status === 'posted') toast('Posted successfully!');
   else toast(`Status: ${result?.status || 'error'}`, 'error');
+  loadQueue();
+}
+
+// ─── SCHEDULE ───
+
+let smContentId = null;
+
+function openScheduleModal(id, existing) {
+  smContentId = id;
+  const when = existing ? new Date(existing) : new Date(Date.now() + 60 * 60 * 1000);
+  when.setSeconds(0, 0);
+  const pad = n => String(n).padStart(2, '0');
+  document.getElementById('sm-datetime').value =
+    `${when.getFullYear()}-${pad(when.getMonth() + 1)}-${pad(when.getDate())}T${pad(when.getHours())}:${pad(when.getMinutes())}`;
+  document.getElementById('scheduleModal').classList.add('active');
+}
+
+async function saveSchedule() {
+  const value = document.getElementById('sm-datetime').value;
+  if (!value) { toast('เลือกเวลาก่อน', 'error'); return; }
+  const result = await api(`/api/contents/${smContentId}/schedule`, {
+    method: 'POST',
+    body: JSON.stringify({ scheduled_at: value }),
+  });
+  if (result?.status === 'scheduled') {
+    closeModal('scheduleModal');
+    toast(`ตั้งเวลาแล้ว: ${new Date(result.scheduled_at).toLocaleString()}`);
+    loadQueue();
+  } else {
+    toast(result?.detail || 'ตั้งเวลาไม่สำเร็จ', 'error');
+  }
+}
+
+async function unscheduleContent(id) {
+  if (!confirm('ยกเลิกเวลาที่ตั้งไว้? กลับไปเป็น draft ไม่โพสต์')) return;
+  const result = await api(`/api/contents/${id}/unschedule`, { method: 'POST' });
+  toast(result?.status === 'draft' ? 'ยกเลิกเวลาแล้ว' : (result?.detail || 'ยกเลิกไม่สำเร็จ'), result?.status === 'draft' ? 'success' : 'error');
   loadQueue();
 }
 

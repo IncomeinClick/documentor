@@ -39,9 +39,9 @@ class Content(Base):
     project_id = Column(Text, ForeignKey("projects.id"), nullable=False)
     title = Column(Text, nullable=False)
     caption = Column(Text, nullable=True)  # caption text posted with the headline image
-    status = Column(Text, default="draft")  # draft/executing/posted/posted_draft/failed
+    status = Column(Text, default="draft")  # draft/scheduled/executing/posted/posted_draft/failed
     image_method = Column(Text, default="text_on_bg")  # text_on_bg | infographic_ai
-    scheduled_at = Column(DateTime, nullable=True)  # legacy; scheduling removed but column kept for old rows
+    scheduled_at = Column(DateTime, nullable=True)  # naive BANGKOK wall-clock (what Pond types), NOT UTC like the other columns
     source = Column(Text, default="manual")
     fb_post_id = Column(Text, nullable=True)
     ig_post_id = Column(Text, nullable=True)

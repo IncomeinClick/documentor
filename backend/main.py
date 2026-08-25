@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response, Depends
 from fastapi.staticfiles import StaticFiles
@@ -6,6 +7,7 @@ from pathlib import Path
 from backend.database import init_db
 from backend.auth import authenticate, require_auth
 from backend.routers import contents, blocks, image, projects, credentials, ai_image, ideas
+from backend.services.scheduler import scheduler_loop
 from pydantic import BaseModel
 
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
@@ -14,7 +16,9 @@ FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    task = asyncio.create_task(scheduler_loop())
     yield
+    task.cancel()
 
 
 app = FastAPI(title="Documentor v2", lifespan=lifespan)
