@@ -65,6 +65,24 @@ a { color: var(--accent); text-decoration: none; cursor: pointer; }
 .btn-outline:hover { background: #222; }
 .btn-sm { padding: 6px 12px; font-size: 12px; }
 .btn-group { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn.is-busy::before { content: ''; width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: btn-spin 0.6s linear infinite; }
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+
+/* Calendar (schedule modal) */
+.cal { border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 14px; font-weight: 600; }
+.cal-nav { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text); cursor: pointer; font-size: 16px; }
+.cal-nav:hover { border-color: var(--accent); color: var(--accent); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-dow { text-align: center; font-size: 11px; color: var(--muted); padding: 2px 0; }
+.cal-day { padding: 7px 0; border-radius: 8px; border: 1px solid transparent; background: none; color: var(--text); font-size: 13px; cursor: pointer; }
+.cal-day:hover:not(:disabled) { border-color: var(--accent); }
+.cal-day.today { border-color: #444; }
+.cal-day.selected { background: var(--accent); color: #fff; font-weight: 700; border-color: var(--accent); }
+.cal-day:disabled { color: #3a3a3a; cursor: default; }
+.time-chip { padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 12px; cursor: pointer; }
+.time-chip:hover { border-color: var(--accent); color: var(--accent); }
 
 /* Forms */
 .form-group { margin-bottom: 16px; }
@@ -416,10 +434,26 @@ a { color: var(--accent); text-decoration: none; cursor: pointer; }
 <div class="modal-overlay" id="scheduleModal">
   <div class="modal" style="max-width:420px;">
     <h2>⏰ ตั้งเวลาโพสต์</h2>
-    <div class="form-group">
-      <label class="form-label">เวลาไทย</label>
-      <input class="form-input" type="datetime-local" id="sm-datetime">
+    <div class="cal">
+      <div class="cal-head">
+        <button class="cal-nav" onclick="calMove(-1)">‹</button>
+        <span id="cal-title"></span>
+        <button class="cal-nav" onclick="calMove(1)">›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
     </div>
+    <div class="form-group" style="margin-top:14px;">
+      <label class="form-label">เวลา (เวลาไทย)</label>
+      <input class="form-input" type="time" id="sm-time" step="300" onchange="updateScheduleSummary()">
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+        <button class="time-chip" onclick="setScheduleTime('08:00')">08:00</button>
+        <button class="time-chip" onclick="setScheduleTime('10:30')">10:30</button>
+        <button class="time-chip" onclick="setScheduleTime('12:00')">12:00</button>
+        <button class="time-chip" onclick="setScheduleTime('18:00')">18:00</button>
+        <button class="time-chip" onclick="setScheduleTime('20:00')">20:00</button>
+      </div>
+    </div>
+    <div id="sm-summary" style="font-size:13px;color:var(--accent);margin-bottom:10px;"></div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">
       ถึงเวลาแล้วระบบโพสต์ให้เหมือนกด Execute ทุกอย่าง — รูป + คอมเมนต์ + IG.
       ถ้าเซิร์ฟเวอร์ดับจนเลยเวลาเกิน 6 ชม. จะไม่โพสต์ให้ แต่จะเด้ง Telegram แจ้ง
@@ -1457,20 +1491,77 @@ async function executeContent(id) {
 // ─── SCHEDULE ───
 
 let smContentId = null;
+let smDay = null;      // Date at midnight — the day picked on the calendar
+let calCursor = null;  // Date — the month the calendar is showing
+
+const TH_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+const TH_DOW = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+const pad2 = n => String(n).padStart(2, '0');
 
 function openScheduleModal(id, existing) {
   smContentId = id;
   const when = existing ? new Date(existing) : new Date(Date.now() + 60 * 60 * 1000);
-  when.setSeconds(0, 0);
-  const pad = n => String(n).padStart(2, '0');
-  document.getElementById('sm-datetime').value =
-    `${when.getFullYear()}-${pad(when.getMonth() + 1)}-${pad(when.getDate())}T${pad(when.getHours())}:${pad(when.getMinutes())}`;
+  smDay = new Date(when.getFullYear(), when.getMonth(), when.getDate());
+  calCursor = new Date(smDay);
+  document.getElementById('sm-time').value = `${pad2(when.getHours())}:${pad2(when.getMinutes())}`;
+  renderCalendar();
   document.getElementById('scheduleModal').classList.add('active');
 }
 
+function calMove(months) {
+  calCursor.setMonth(calCursor.getMonth() + months);
+  renderCalendar();
+}
+
+function pickDay(y, m, d) {
+  smDay = new Date(y, m, d);
+  renderCalendar();
+}
+
+function setScheduleTime(hhmm) {
+  document.getElementById('sm-time').value = hhmm;
+  updateScheduleSummary();
+}
+
+function renderCalendar() {
+  const y = calCursor.getFullYear(), m = calCursor.getMonth();
+  document.getElementById('cal-title').textContent = `${TH_MONTHS[m]} ${y + 543}`;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const cells = TH_DOW.map(d => `<div class="cal-dow">${d}</div>`);
+  for (let i = 0; i < new Date(y, m, 1).getDay(); i++) cells.push('<div></div>');
+  for (let d = 1; d <= new Date(y, m + 1, 0).getDate(); d++) {
+    const day = new Date(y, m, d);
+    const cls = ['cal-day'];
+    if (day.getTime() === today.getTime()) cls.push('today');
+    if (smDay && day.getTime() === smDay.getTime()) cls.push('selected');
+    cells.push(`<button class="${cls.join(' ')}" ${day < today ? 'disabled' : ''} onclick="pickDay(${y},${m},${d})">${d}</button>`);
+  }
+  document.getElementById('cal-grid').innerHTML = cells.join('');
+  updateScheduleSummary();
+}
+
+function scheduleValue() {
+  const time = document.getElementById('sm-time').value;
+  if (!smDay || !time) return null;
+  return `${smDay.getFullYear()}-${pad2(smDay.getMonth() + 1)}-${pad2(smDay.getDate())}T${time}`;
+}
+
+function updateScheduleSummary() {
+  const el = document.getElementById('sm-summary');
+  const value = scheduleValue();
+  if (!value) { el.textContent = ''; return; }
+  const when = new Date(value);
+  const past = when <= new Date();
+  el.style.color = past ? 'var(--danger)' : 'var(--accent)';
+  el.textContent = past
+    ? '⚠️ เวลานี้ผ่านไปแล้ว เลือกใหม่'
+    : `📅 โพสต์ ${when.getDate()} ${TH_MONTHS[when.getMonth()]} ${when.getFullYear() + 543} เวลา ${pad2(when.getHours())}:${pad2(when.getMinutes())} น.`;
+}
+
 async function saveSchedule() {
-  const value = document.getElementById('sm-datetime').value;
-  if (!value) { toast('เลือกเวลาก่อน', 'error'); return; }
+  const value = scheduleValue();
+  if (!value) { toast('เลือกวันและเวลาก่อน', 'error'); return; }
+  if (new Date(value) <= new Date()) { toast('เวลาที่เลือกผ่านไปแล้ว', 'error'); return; }
   const result = await api(`/api/contents/${smContentId}/schedule`, {
     method: 'POST',
     body: JSON.stringify({ scheduled_at: value }),
@@ -1595,6 +1686,36 @@ async function downloadImage() {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Download PNG'; }
   }
+}
+
+// ─── CLICK FEEDBACK ───
+// Inline onclick handlers give no sign that they're still running, so a slow action (Execute,
+// image generation) looks like a dead click and gets clicked again. Wrap the async ones: the
+// button that fired them goes disabled + spinner until the promise settles, so a second click
+// during the first one is swallowed instead of posting twice.
+const BUSY_ACTIONS = [
+  'executeContent', 'createContent', 'createFbDraft', 'saveSchedule', 'unscheduleContent',
+  'deleteContent', 'saveContentEdit', 'previewContentImage', 'downloadImage',
+  'aiGenHook', 'aiGenImage', 'aaGenHook', 'aaGenImage', 'aaSave', 'openAiAttachModal', 'openEditModal',
+  'saveProject', 'deleteCurrentProject', 'saveProjectInfo', 'saveProjectCredential',
+  'saveProjectImageSettings', 'saveCredential', 'testCredential', 'deleteCredential',
+  'runIdeas', 'loadIdeas', 'loadPosted',
+];
+
+for (const name of BUSY_ACTIONS) {
+  const fn = window[name];
+  if (typeof fn !== 'function') continue;
+  window[name] = function (...args) {
+    const btn = window.event?.target?.closest?.('.btn');
+    if (!btn) return fn.apply(this, args);
+    if (btn.disabled) return;  // still running — ignore the repeat click
+    btn.disabled = true;
+    btn.classList.add('is-busy');
+    return Promise.resolve(fn.apply(this, args)).finally(() => {
+      btn.disabled = false;
+      btn.classList.remove('is-busy');
+    });
+  };
 }
 
 // ─── INIT ───
